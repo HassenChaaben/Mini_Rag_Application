@@ -76,7 +76,7 @@ async def process_endpoint(project_id: str, process_request: ProcessRequest):
         file_content=file_content,
         file_id=file_id,
         chunk_size=chunk_size,
-        overlap_size=overlap_size
+        chunk_overlap=overlap_size
     )
 
     if file_chunks is None or len(file_chunks) == 0:
