@@ -40,7 +40,15 @@ $ pip install -r requirements.txt
 $ cp .env.example .env
 ```
 
-Set your environment variables in the `.env` file. Like `OPENAI_API_KEY` value.  
+Set your environment variables in the `.env` file. Like `OPENAI_API_KEY` value. 
+
+## Run Docker Compose Services
+
+```bash
+$ cd docker
+$ cp .env.example .env
+$ docker-compose up 
+```
 
 ## Run the FastAPI server 
 
@@ -51,3 +59,4 @@ $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ## POSTMAN collection 
 
 download the POSTMAN collection from [/assets/mini-rag-app.postman_collection.json](/assets/mini-rag-app.postman_collection.json)
+
