@@ -10,3 +10,6 @@ class ResponseSignal(Enum):
     FILE_UPLOAD_FAILED = "File upload failed."
     FILE_CHUNKING_FAILED = "File chunking failed."
     FILE_CHUNKING_SUCCESS = "File chunking succeeded."
+    PROCESSING_FAILED = "Processing failed."
+    NO_FILES_ERROR = "No files found."
+    NO_FILE_ERROR = "This file was not found."
