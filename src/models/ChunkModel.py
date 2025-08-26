@@ -44,8 +44,8 @@ class ChunkModel(BaseDataModel):
             operations = [InsertOne(chunk.dict(by_alias=True, exclude_unset=True)) for chunk in batch]
             # insert many causea lot of promblems
             await self.collection.bulk_write(operations)
-        
         return len(chunks)
+    
     async def delete_chunks_by_project_id(self , project_id: ObjectId):
         result = await self.collection.delete_many({
             "chunk_project_id": project_id
