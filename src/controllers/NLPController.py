@@ -78,6 +78,8 @@ class NLPController(BaseController):
             vector = vector,
             limit = limit
         )
+        if not results :
+            return False
         
         return results
         
