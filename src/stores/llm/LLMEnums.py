@@ -18,6 +18,7 @@ class coHereEnum(Enum):
     
 
 class GeminiEnum(Enum):
+    SYSTEM = "system"  
     USER = "user"
     ASSISTANT = "model"
     

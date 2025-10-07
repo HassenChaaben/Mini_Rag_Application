@@ -16,10 +16,14 @@ class OPENAIProvider(LLMInterface):
         self.generation_model_id = None
         self.embedding_model_id = None
         self.embedding_size = None
+        
         self.client = OpenAI(
             api_key = self.api_key,
             base_url = self.api_url 
         )
+        
+        self.Enums = OpenAIEnum
+        
         self.logger = logging.getLogger(__name__)
         
     def set_generation_model(self , model_id:str):
@@ -58,7 +62,12 @@ class OPENAIProvider(LLMInterface):
         if not response or not response.choices or len(response.choices) == 0 or not response.choices[0].message:
             self.logger.error("Error while generating text with OpenAI")
             return None
-        return response.choices[0].message["content"]
+        
+        # Append assistant response to chat_history like in GeminiProvider
+        assistant_message = response.choices[0].message.content
+        chat_history.append(self.contruct_prompt(prompt=assistant_message, role=OpenAIEnum.ASSISTANT.value))
+        
+        return assistant_message
 
     def embed_text(self , text:str , document_type :str = None):
         # when dealing with third party , you should always over verfiy 
