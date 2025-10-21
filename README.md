@@ -6,8 +6,6 @@ This is minimal implementation of the RAG model for question answering.
 
 - Python 3.8 or later 
 
-### Install Python using MiniConda 
-
 ### Install python using MiniConda 
 
 1) Download and install MiniConda From [here] (https://www.anaconda.com/docs/getting-started/miniconda/install)
