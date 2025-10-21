@@ -95,7 +95,7 @@ class NLPController(BaseController):
         )
         
         if not retrieved_documents or len(retrieved_documents) == 0:
-            return None 
+            return answer , full_prompt , chat_history  
         #  step 2 : contruct LLM prompt 
         
         # try to avoid write prompts inside code , you should put prompts in somewhere 
