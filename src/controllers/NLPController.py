@@ -6,11 +6,12 @@ import json
 
 
 class NLPController(BaseController):
-    def __init__(self , vectordb_client , generation_client , embedding_client):
+    def __init__(self , vectordb_client , generation_client , embedding_client , template_parser):
         super().__init__()
         self.vectordb_client = vectordb_client
         self.generation_client = generation_client
         self.embedding_client = embedding_client
+        self.template_parser = template_parser
         
     def create_collection_name(self , project_id: str):
         return f"collection_{project_id}".strip()
@@ -78,8 +79,63 @@ class NLPController(BaseController):
             vector = vector,
             limit = limit
         )
+        if not results :
+            return False
         
         return results
         
-    
+    def answer_rag_question(self , project:Project , query:str , limit:int =5):
         
+        answer , full_prompt , chat_history  = None , None , None
+        # step 1 : retrieve relevant documents
+        retrieved_documents = self.search_vector_db_collection(
+            project=project,
+            text=query,
+            limit=limit
+        )
+        
+        if not retrieved_documents or len(retrieved_documents) == 0:
+            return answer , full_prompt , chat_history  
+        #  step 2 : contruct LLM prompt 
+        
+        # try to avoid write prompts inside code , you should put prompts in somewhere 
+        # system_prompt = """You are an assistant to generate a response for the user .
+        #                    You will be provided by set of documents associated with the user query . 
+        #                    You have to generate a response based on the documents provided .Ignore the Document if not relevant to the query . 
+        
+        # """
+
+        system_prompt = self.template_parser.get(group = "rag" , key = "system_prompt")
+        
+        # document_prompts = []
+        # for idx, doc in enumerate(retrieved_documents):
+        #     document_prompts.append(
+        #         self.template_parser.get("rag","document_prompt" , {
+        #             "doc_num": idx + 1,
+        #             "chunk_text": doc.text,
+        #         } )
+        #     )
+            
+            
+        # Comprehention List
+        document_prompt = "\n".join([
+            self.template_parser.get("rag","document_prompt" , {"doc_num": idx + 1,"chunk_text": doc.text,} )
+            for idx, doc in enumerate(retrieved_documents)
+        ])
+
+        footer_prompt = self.template_parser.get(group = "rag" , key = "footer_prompt", vars={"user_question": query})
+
+        chat_history = [
+            self.generation_client.contruct_prompt(
+                prompt=system_prompt , 
+                role=self.generation_client.Enums.SYSTEM.value),
+        ]
+        
+        full_prompt = "\n\n".join([document_prompt , footer_prompt])
+        
+        answer = self.generation_client.generate_text(
+            prompt=full_prompt,
+            chat_history=chat_history
+        )
+        
+        return answer , full_prompt , chat_history 

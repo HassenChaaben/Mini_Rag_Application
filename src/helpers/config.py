@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     OPENAI_API_URL:str=None
     COHERE_API_KEY: str=None
     GEMINI_API_KEY: str=None
+    PERPLEXITY_API_KEY: str=None
     
     GENERATION_MODEL_ID: str=None
     EMBEDDING_MODEL_ID: str=None
@@ -31,7 +32,8 @@ class Settings(BaseSettings):
     VECTOR_DB_PATH:str 
     VECTOR_DB_DISTANCE_METHOD:str = None
      
-    
+    DEFAULT_LANGUAGE:str = "en"
+    PRIMARY_LANGUAGE:str = "en"
 
     class Config:
         env_file = ".env"

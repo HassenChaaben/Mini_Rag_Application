@@ -1,6 +1,7 @@
 from qdrant_client import QdrantClient , models
 from ..VectorInterface import VectorInterface
-from ..VectorDBEnums import DistanceMethodEnums
+from ..VectorDBEnums import DistanceMethodEnums 
+from models.db_schemes import RetrievedDocument
 import logging 
 from typing import List
 import json
@@ -129,8 +130,17 @@ class QdrantDBProvider(VectorInterface):
             query_vector = vector,
             limit = limit
         )
-        if not results:
-            return False
+        if not results or len(results) == 0:
+            return None
         
         # the results may contain non-serializable objects, convert them to dict
-        return json.loads(json.dumps(results, default=lambda x: x.__dict__))
+        # return json.loads(json.dumps(results, default=lambda x: x.__dict__)) 
+        
+        # to make it work with faiss , or ChromaDB we will use database schema  
+        return [
+            RetrievedDocument(**{
+                "score": result.score,
+                "text": result.payload["text"]
+            })
+            for result in results 
+        ]
