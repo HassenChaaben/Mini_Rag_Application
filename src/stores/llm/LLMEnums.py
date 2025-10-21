@@ -4,8 +4,13 @@ class LLMEnum(Enum):
     OPENAI = "OPENAI"
     cohere = "COHERE"
     GEMINI = "Google"
+    PERPLEXITY = "Perplexity"
 
 class OpenAIEnum(Enum):
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
+class PerplexityEnum(Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
