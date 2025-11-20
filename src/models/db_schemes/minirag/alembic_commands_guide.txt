@@ -1,0 +1,448 @@
+================================================================================
+ALEMBIC MIGRATION COMMANDS - COMPLETE GUIDE
+================================================================================
+
+Project: mini-rag RAG Tutorial
+Location: C:\Users\user\Desktop\min-rag-tutor\src\models\db_schemes\minirag
+Date: November 20, 2025
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Initial Setup
+2. Upgrade Commands (Apply Migrations)
+3. Downgrade Commands (Rollback Migrations)
+4. Information Commands
+5. Migration Management
+6. Common Workflows
+7. Troubleshooting
+8. Best Practices
+
+================================================================================
+1. INITIAL SETUP
+================================================================================
+
+Step 1: Copy configuration file
+--------------------------------
+cp alembic.ini.example alembic.ini
+
+Step 2: Update database credentials in alembic.ini
+---------------------------------------------------
+Edit alembic.ini and update the sqlalchemy.url:
+
+sqlalchemy.url = postgresql://username:password@localhost:5432/database_name
+
+Example:
+sqlalchemy.url = postgresql://minirag_user:your_password@localhost:5400/minirag_db
+
+Step 3: Verify configuration
+-----------------------------
+alembic current
+
+This should show the current migration state.
+
+================================================================================
+2. UPGRADE COMMANDS (APPLY MIGRATIONS - FORWARD)
+================================================================================
+
+Apply all pending migrations to latest version:
+------------------------------------------------
+alembic upgrade head
+
+Description: Applies all migrations that haven't been run yet. This brings 
+your database schema to the most recent version defined in your migration files.
+
+Apply migrations up to a specific revision:
+--------------------------------------------
+alembic upgrade <revision_id>
+
+Example:
+alembic upgrade ae1027a6acf
+
+Apply next N migrations:
+-------------------------
+alembic upgrade +N
+
+Examples:
+alembic upgrade +1    # Apply next 1 migration
+alembic upgrade +3    # Apply next 3 migrations
+
+Upgrade with SQL output (dry run):
+-----------------------------------
+alembic upgrade head --sql > upgrade.sql
+
+This generates the SQL without executing it, useful for review.
+
+================================================================================
+3. DOWNGRADE COMMANDS (ROLLBACK MIGRATIONS - BACKWARD)
+================================================================================
+
+Rollback the most recent migration:
+------------------------------------
+alembic downgrade -1
+
+Description: Undoes the last applied migration. This is the most common 
+rollback operation when you need to undo recent changes.
+
+Rollback multiple migrations:
+------------------------------
+alembic downgrade -N
+
+Examples:
+alembic downgrade -2    # Rollback last 2 migrations
+alembic downgrade -5    # Rollback last 5 migrations
+
+Rollback to a specific revision:
+---------------------------------
+alembic downgrade <revision_id>
+
+Example:
+alembic downgrade 3b2c1a5d6e7f
+
+Description: Rolls back to the specified migration version. All migrations 
+applied after this version will be undone.
+
+Rollback ALL migrations (return to base):
+------------------------------------------
+alembic downgrade base
+
+⚠️ WARNING: This removes ALL applied migrations and returns the database 
+to its initial state. This can result in DATA LOSS if migrations drop tables 
+or columns. Always backup your database before running this command.
+
+Downgrade with SQL output (dry run):
+-------------------------------------
+alembic downgrade -1 --sql > downgrade.sql
+
+This generates the rollback SQL without executing it.
+
+================================================================================
+4. INFORMATION COMMANDS
+================================================================================
+
+Show current migration version:
+--------------------------------
+alembic current
+
+Example output:
+ae1027a6acf (head)
+
+Show migration history:
+------------------------
+alembic history
+
+Example output:
+ae1027a6acf -> 3b2c1a5d6e7f (head), add chunks table
+3b2c1a5d6e7f -> 1a2b3c4d5e6f, add projects table
+1a2b3c4d5e6f -> <base>, initial migration
+
+Show verbose history with details:
+-----------------------------------
+alembic history --verbose
+
+Show history in range:
+----------------------
+alembic history -r base:head
+alembic history -r <start_rev>:<end_rev>
+
+Show heads (latest revisions):
+-------------------------------
+alembic heads
+
+Show branches:
+--------------
+alembic branches
+
+================================================================================
+5. MIGRATION MANAGEMENT
+================================================================================
+
+Create a new migration (manual):
+---------------------------------
+alembic revision -m "description of changes"
+
+Example:
+alembic revision -m "add user_id column to chunks table"
+
+Create auto-generated migration:
+---------------------------------
+alembic revision --autogenerate -m "description of changes"
+
+Example:
+alembic revision --autogenerate -m "add indexes to chunks table"
+
+Description: Alembic compares your SQLAlchemy models with the current database 
+schema and automatically generates migration code. Always review the generated 
+migration file before applying it.
+
+Stamp database to a specific revision (without running migrations):
+--------------------------------------------------------------------
+alembic stamp head
+alembic stamp <revision_id>
+
+Description: Marks the database as being at a specific version without actually 
+running the migrations. Useful when manually applying schema changes or 
+initializing a database that already has the schema.
+
+Merge multiple heads:
+---------------------
+alembic merge <rev1> <rev2> -m "merge branches"
+
+================================================================================
+6. COMMON WORKFLOWS
+================================================================================
+
+Workflow 1: Apply New Migration
+--------------------------------
+1. Create migration:
+   alembic revision --autogenerate -m "add new feature"
+
+2. Review generated migration file in alembic/versions/
+
+3. Apply migration:
+   alembic upgrade head
+
+4. Verify:
+   alembic current
+
+Workflow 2: Rollback Last Migration
+------------------------------------
+1. Check current state:
+   alembic current
+
+2. Rollback one step:
+   alembic downgrade -1
+
+3. Verify:
+   alembic current
+
+4. If needed, re-apply after fixes:
+   alembic upgrade head
+
+Workflow 3: Reset Database to Clean State
+------------------------------------------
+1. Backup database:
+   pg_dump -U username -d database_name > backup.sql
+
+2. Rollback all migrations:
+   alembic downgrade base
+
+3. Re-apply all migrations:
+   alembic upgrade head
+
+4. Verify:
+   alembic current
+   alembic history
+
+Workflow 4: Fix Failed Migration
+---------------------------------
+1. Check current state:
+   alembic current
+
+2. If migration partially applied, manually fix database or rollback:
+   alembic downgrade -1
+
+3. Fix migration file in alembic/versions/
+
+4. Re-apply:
+   alembic upgrade head
+
+Workflow 5: Deploy to Production
+---------------------------------
+1. Test migrations in development:
+   alembic upgrade head
+
+2. Generate SQL for review:
+   alembic upgrade head --sql > production_upgrade.sql
+
+3. Review SQL with DBA/team
+
+4. On production server:
+   alembic current    # Check current state
+   alembic upgrade head
+
+5. Verify:
+   alembic current
+
+================================================================================
+7. TROUBLESHOOTING
+================================================================================
+
+Problem: "Can't locate revision identified by 'xxxxx'"
+-------------------------------------------------------
+Solution:
+1. Check if migration file exists in alembic/versions/
+2. Verify alembic_version table in database
+3. If mismatch, use: alembic stamp <correct_revision>
+
+Problem: "Target database is not up to date"
+---------------------------------------------
+Solution:
+alembic upgrade head
+
+Problem: Migration fails midway
+--------------------------------
+Solution:
+1. Check database state manually
+2. Fix issues in database or migration file
+3. Either:
+   - Stamp to current state: alembic stamp <revision>
+   - Or rollback: alembic downgrade -1
+4. Re-apply: alembic upgrade head
+
+Problem: Can't connect to database
+-----------------------------------
+Solution:
+1. Verify PostgreSQL is running:
+   docker-compose ps (if using Docker)
+   
+2. Check alembic.ini database URL
+
+3. Test connection:
+   psql -h localhost -p 5432 -U username -d database_name
+
+Problem: Multiple heads detected
+---------------------------------
+Solution:
+alembic merge <head1> <head2> -m "merge branches"
+alembic upgrade head
+
+Problem: Need to skip a migration
+----------------------------------
+Solution:
+1. Downgrade past the problematic migration:
+   alembic downgrade <revision_before_problem>
+
+2. Stamp to skip the migration:
+   alembic stamp <revision_after_problem>
+
+3. Continue upgrading:
+   alembic upgrade head
+
+================================================================================
+8. BEST PRACTICES
+================================================================================
+
+Before Running Migrations:
+--------------------------
+✓ Always backup your database before running migrations, especially downgrades
+✓ Test migrations in development environment first
+✓ Review auto-generated migration files - they may not catch everything
+✓ Use meaningful migration messages
+✓ Check current state before upgrading/downgrading
+
+During Development:
+-------------------
+✓ Create small, focused migrations
+✓ Test both upgrade and downgrade paths
+✓ Don't edit migration files after they've been applied
+✓ Use --autogenerate for schema changes, manual for data migrations
+✓ Add indexes in separate migrations for better rollback control
+
+For Production:
+---------------
+✓ Always generate SQL for review: alembic upgrade head --sql
+✓ Coordinate with team before running migrations
+✓ Have rollback plan ready
+✓ Monitor application during migration
+✓ Keep migration history clean and organized
+
+Migration File Best Practices:
+-------------------------------
+✓ Always implement both upgrade() and downgrade() functions
+✓ Test downgrade immediately after creating migration
+✓ Use batch operations for large data modifications
+✓ Add comments explaining complex logic
+✓ Handle data migrations carefully (preserve data integrity)
+
+Version Control:
+----------------
+✓ Commit migration files to version control
+✓ Don't delete old migration files
+✓ Keep alembic.ini.example in repo, not alembic.ini (contains credentials)
+✓ Document any manual database changes required
+
+================================================================================
+QUICK REFERENCE CARD
+================================================================================
+
+Most Common Commands:
+---------------------
+alembic current                    # Check current version
+alembic history                    # View migration history
+alembic upgrade head               # Apply all pending migrations
+alembic downgrade -1               # Rollback last migration
+alembic downgrade base             # Remove all migrations
+alembic revision --autogenerate -m "message"  # Create new migration
+
+Dry Run Commands:
+-----------------
+alembic upgrade head --sql         # Generate SQL without applying
+alembic downgrade -1 --sql         # Generate rollback SQL
+
+Emergency Commands:
+-------------------
+alembic stamp head                 # Mark as current without running migrations
+alembic stamp base                 # Mark as base without running downgrades
+
+================================================================================
+EXAMPLE SESSION
+================================================================================
+
+# Initial setup
+cd C:\Users\user\Desktop\min-rag-tutor\src\models\db_schemes\minirag
+cp alembic.ini.example alembic.ini
+# Edit alembic.ini with database credentials
+
+# Check initial state
+alembic current
+# Output: <base>
+
+# Create first migration
+alembic revision --autogenerate -m "initial schema"
+# Review generated file in alembic/versions/
+
+# Apply migration
+alembic upgrade head
+# Output: Running upgrade  -> ae1027a6acf, initial schema
+
+# Verify
+alembic current
+# Output: ae1027a6acf (head)
+
+# Make changes to models, create new migration
+alembic revision --autogenerate -m "add indexes"
+# Review generated file
+
+# Apply
+alembic upgrade head
+# Output: Running upgrade ae1027a6acf -> 3b2c1a5d6e7f, add indexes
+
+# View history
+alembic history
+# Output shows all migrations applied
+
+# Rollback last migration
+alembic downgrade -1
+# Output: Running downgrade 3b2c1a5d6e7f -> ae1027a6acf, add indexes
+
+# Re-apply
+alembic upgrade head
+
+================================================================================
+FOR MORE INFORMATION
+================================================================================
+
+Official Documentation: https://alembic.sqlalchemy.org/
+Migration Tutorial: https://alembic.sqlalchemy.org/en/latest/tutorial.html
+Auto-generate: https://alembic.sqlalchemy.org/en/latest/autogenerate.html
+
+Project-Specific Info:
+- Location: src/models/db_schemes/minirag/
+- Configuration: alembic.ini
+- Migrations: alembic/versions/
+- Models: schemes/*.py
+
+================================================================================
+END OF GUIDE
+================================================================================

@@ -2,7 +2,7 @@ from stores.llm.LLMInterface import LLMInterface
 from stores.llm.LLMEnums import GeminiEnum
 import google.generativeai as genai
 import logging
-
+from typing import List, Union
 logger = logging.getLogger(__name__)
 
 class GeminiProvider(LLMInterface):
@@ -182,12 +182,13 @@ class GeminiProvider(LLMInterface):
             self.logger.error(traceback.format_exc())
             return None
 
-    def embed_text(self, text: str, document_type: str = None):
+    def embed_text(self, text: Union[str , List[str]] , document_type: str = None):
         """Generate embeddings using Gemini's embedding API"""
         if not self.embedding_model_id:
             self.logger.error("Embedding model not set. Call set_embedding_model() first.")
             return None
-        
+        if isinstance(text, str):
+            text = [text]
         try:
             # Determine task type
             task_type = "RETRIEVAL_DOCUMENT" if document_type == "document" else "RETRIEVAL_QUERY"
@@ -204,7 +205,7 @@ class GeminiProvider(LLMInterface):
                 self.logger.error("Error while embedding text with Gemini")
                 return None
             
-            return result['embedding']
+            return [record for record in result['embedding']]
             
         except Exception as e:
             self.logger.error(f"Error generating embedding with Gemini: {str(e)}")
@@ -214,5 +215,5 @@ class GeminiProvider(LLMInterface):
         """Construct a prompt - uses OpenAI-style format internally for consistency"""
         return {
             "role": role,
-            "content": self.process_text(prompt)
+            "content": prompt
         }

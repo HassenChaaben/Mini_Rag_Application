@@ -76,5 +76,5 @@ class PerplexityProvider(LLMInterface):
     def contruct_prompt(self , prompt:str , role :str):
         return {
         "role":role,
-        "content":self.process_text(prompt) # make sure that the prompt is not too long
+        "content":prompt # make sure that the prompt is not too long
         }
