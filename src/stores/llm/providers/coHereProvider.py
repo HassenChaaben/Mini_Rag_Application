@@ -2,6 +2,7 @@ from stores.llm.LLMInterface import LLMInterface
 from  stores.llm.LLMEnums import coHereEnum , DocumentTypeEnum
 import cohere 
 import logging 
+from typing import List , Union
 class coHereProvider(LLMInterface):
     def __init__(self , api_key : str ,
                 default_input_max_characters:int=1000,
@@ -56,10 +57,13 @@ class coHereProvider(LLMInterface):
             return None
         return response.text
     
-    def embed_text(self , text:str , document_type :str = None):
+    def embed_text(self , text: Union[str, List[str]] , document_type :str = None):
         if not self.client:
             self.logger.error("coHere client was not set")
             return None 
+        
+        if isinstance(text , str):
+            text = [text]
         
         if not self.embedding_model_id:
             self.logger.error("Embedding model for OpenAI was not set") 
@@ -70,7 +74,7 @@ class coHereProvider(LLMInterface):
             input_type = coHereEnum.QUERY.value
         response = self.client.embed(
             model = self.embedding_model_id,
-            texts = [self.process_text(text)],
+            texts = [self.process_text(t) for t in text],
             input_type = input_type,
             embedding_types=["float"]
         )
@@ -79,12 +83,12 @@ class coHereProvider(LLMInterface):
             self.logger.error("Error while generating embeddings with coHere")
             return None
         
-        return response.embeddings.float[0]
+        return [ f for f in response.embeddings.float ]
         
     def contruct_prompt(self , prompt:str , role :str):
         return {
             "role":role,
-            "text":self.process_text(prompt) # make sure that the prompt is not too long
+            "text":prompt # make sure that the prompt is not too long
         }
         
         

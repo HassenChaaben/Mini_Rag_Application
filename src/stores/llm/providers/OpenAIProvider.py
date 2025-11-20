@@ -2,6 +2,7 @@ from stores.llm.LLMInterface import LLMInterface
 from openai import OpenAI
 import logging
 from  stores.llm.LLMEnums import OpenAIEnum 
+from typing import List , Union
 class OPENAIProvider(LLMInterface):
     def __init__(self , api_key : str , api_url : str=None,
                 default_input_max_characters:int=1000,
@@ -70,7 +71,7 @@ class OPENAIProvider(LLMInterface):
         
         return assistant_message
 
-    def embed_text(self , text:str , document_type :str = None):
+    def embed_text(self , text:Union[str, List[str]] , document_type :str = None):
         # when dealing with third party , you should always over verfiy 
         # to metegate the error that means make the error lest harmfull
         
@@ -82,6 +83,9 @@ class OPENAIProvider(LLMInterface):
             self.logger.error("Embedding model for OpenAI was not set") 
             return None 
         
+        if isinstance(text , str):
+            text = [text]
+        
         response = self.client.embeddings.create(
             model = self.embedding_model_id , 
             input = text
@@ -90,12 +94,12 @@ class OPENAIProvider(LLMInterface):
             self.logger.error("Error while embedding text with openAI")
             return None
         
-        return response.data[0].embedding
+        return [ data.embedding for data in response.data ]
             
     def contruct_prompt(self , prompt:str , role :str):
         return {
             "role":role,
-            "content":self.process_text(prompt) # make sure that the prompt is not too long
+            "content":prompt # make sure that the prompt is not too long
         }
     
     

@@ -4,7 +4,16 @@ import os
 from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders import PyMuPDFLoader 
 from models import ProcessingEnum
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+# from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import List
+from dataclasses import dataclass
+
+# a custom Document class using Python's dataclass decorator to represent a text document with its content and metadata.
+# this decorator automatically generates special methods like __init__() and __repr__() for the class.
+@dataclass
+class Document:
+    page_content: str
+    metadata: dict
 class ProcessController(BaseController):
     def __init__(self , project_id: str):
         super().__init__()
@@ -37,11 +46,11 @@ class ProcessController(BaseController):
     
     def process_file_content(self , file_content : list  , file_id : str , chunk_size: int = 100, chunk_overlap: int = 20):
         
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            length_function=len,
-        )
+        # text_splitter = RecursiveCharacterTextSplitter(
+        #     chunk_size=chunk_size,
+        #     chunk_overlap=chunk_overlap,
+        #     length_function=len,
+        # )
         
         file_content_texts = [
             rec.page_content
@@ -53,9 +62,44 @@ class ProcessController(BaseController):
             for rec in file_content
         ]
         
-        chunks = text_splitter.create_documents(
-            file_content_texts,
-            metadatas=file_content_metadata
+        # chunks = text_splitter.create_documents(
+        #     file_content_texts,
+        #     metadatas=file_content_metadata
+        # )
+        
+        # our custom simple splitter
+        chunks = self.process_simple_splitter(
+            texts=file_content_texts,
+            metadatas=file_content_metadata,
+            chunk_size=chunk_size
         )
         return chunks 
+    
+    def process_simple_splitter(self , texts:List[str] , metadatas:List[dict] , chunk_size: int = 100 , splitter_tag : str = "\n"):
+        
+        full_text = " ".join(texts)
+        # split by splitter_tag
+        lines = [ doc for doc in full_text.split(splitter_tag) if len(doc.strip()) > 1 ]
+        
+        chunks = []
+        current_chunk = ""
+        
+        for line in lines:
+            current_chunk += line + splitter_tag
+            if len(current_chunk) >= chunk_size:
+                chunks.append(
+                    Document(page_content=current_chunk.strip(), 
+                             metadata={})
+                )
+                current_chunk = ""
+        
+        if len(current_chunk) >= 0 :
+            chunks.append(
+                Document(page_content=current_chunk.strip(), 
+                         metadata={})
+            )
+        
+        return chunks
+            
+        
         

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from routes import base , data , nlp
-from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy.ext.asyncio import create_async_engine , AsyncSession
+from sqlalchemy.orm import sessionmaker
 from helpers.config import get_settings
 from stores.llm import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
@@ -11,10 +12,18 @@ app = FastAPI()  # creates the app.
 @app.on_event("startup")
 async def startup_span():
     settings = get_settings()
-    app.mongodb_conn = AsyncIOMotorClient(settings.MONGODB_URL)
-    app.db_client = app.mongodb_conn[settings.MONGODB_DATABASE]
+
+    
+    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USERNAME}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
+    app.db_engine = create_async_engine(postgres_conn)
+    app.db_client = sessionmaker(
+        app.db_engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+
     llm_provider_factory = LLMProviderFactory(config=settings)
-    vectordb_provider_factory = VectorDBProviderFactory(config=settings)
+    vectordb_provider_factory = VectorDBProviderFactory(config=settings , db_client = app.db_client)
     
     # generration client 
     app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)
@@ -26,7 +35,7 @@ async def startup_span():
     
     # vectordb client
     app.vectordb_client = vectordb_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
-    app.vectordb_client.connect()
+    await app.vectordb_client.connect()
     
     # template parser
     app.template_parser = TemplateParser(language=settings.PRIMARY_LANGUAGE , default_language=settings.DEFAULT_LANGUAGE)
@@ -34,8 +43,8 @@ async def startup_span():
     
 @app.on_event("shutdown")
 async def shutdown_span():
-    app.mongodb_conn.close()
-    app.vectordb_client.disconnect()
+    app.db_engine.dispose()
+    await app.vectordb_client.disconnect()
 app.include_router(base.base_router)  # includes the base router in the app.
 app.include_router(data.data_router)  # includes the data router in the app.
 app.include_router(nlp.nlp_router)  # includes the nlp router in the app.
