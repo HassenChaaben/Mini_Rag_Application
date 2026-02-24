@@ -6,8 +6,12 @@ from helpers.config import get_settings
 from stores.llm import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
+from Utils.metrics import setup_metrics
 
 app = FastAPI()  # creates the app.
+#setup Prometheus metrics
+setup_metrics(app)
+
 
 @app.on_event("startup")
 async def startup_span():
