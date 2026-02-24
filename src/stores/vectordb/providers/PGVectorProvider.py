@@ -6,6 +6,7 @@ from models.db_schemes import RetrievedDocument
 import logging 
 from typing import List
 from sqlalchemy import text as sql_text
+from sqlalchemy.exc import IntegrityError
 import json 
 
 class PGVectorProvider(VectorInterface):
@@ -34,12 +35,16 @@ class PGVectorProvider(VectorInterface):
         return  f"{collection_name}_vector_idx"
         
     async def connect(self):
-        async with self.db_client() as session:
-            async with session.begin():
-                await session.execute(sql_text(
-                    "CREATE EXTENSION IF NOT EXISTS vector"
-                ))
-                await session.commit()
+        try:
+            async with self.db_client() as session:
+                async with session.begin():
+                    await session.execute(sql_text(
+                        "CREATE EXTENSION IF NOT EXISTS vector;"
+                    ))
+                    await session.commit()
+        except IntegrityError:
+            # vector extension already exists — safe to ignore
+            pass
         
     async def disconnect(self):
         pass
